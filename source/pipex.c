@@ -6,65 +6,9 @@
 /*   By: roversch <roversch@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/12 14:27:58 by roversch          #+#    #+#             */
-/*   Updated: 2025/03/12 15:59:15 by roversch         ###   ########.fr       */
+/*   Updated: 2025/03/17 17:01:51 by roversch         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-// #include <stdio.h>
-// #include <fcntl.h>
-// #include <unistd.h>
-
-// int main()
-// {
-// 	int fd;
-
-// 	fd = open("example.txt", O_WRONLY);
-// 	dup2(fd, STDOUT_FILENO);
-// 	close(fd);
-// 	printf("eat ass");
-// 	return (0);
-// }
-
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <unistd.h>
-// #include <fcntl.h>
-// #include <sys/types.h>
-// #include <sys/wait.h>
-
-// int main()
-// {
-// 	int pipe_fd[2];
-// 	pid_t pid;
-// 	char buffer[12];
-// 	int	infile;
-// 	int	outfile;
-
-// 	pipe(pipe_fd);
-// 	pid = fork();
-
-// 	if (pid == 0) // child is 0
-// 	{
-// 		close(pipe_fd[0]); // close the read end of the pipe
-// 		infile = open("infile.txt", O_RDONLY);
-// 		read(infile, buffer, 12);
-// 		write(pipe_fd[1], buffer, 12);
-// 		close(infile);
-// 		close(pipe_fd[1]); // close the write end of the pipe
-// 		exit(EXIT_SUCCESS);
-// 	}
-// 	else
-// 	{
-// 		close(pipe_fd[1]); // close the write end of the pipe
-// 		wait(NULL);
-// 		outfile = open("outfile.txt", O_WRONLY);
-// 		read(pipe_fd[0], buffer, 12);
-// 		write(outfile, buffer, 12);
-// 		close(outfile);
-// 		close(pipe_fd[0]); // close the read end of the pipe
-// 		exit(EXIT_SUCCESS);
-// 	}
-// }
 
 #include "pipex.h"
 #include <stdio.h>
@@ -74,10 +18,77 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-void	child(char **argv, int *pipe_fd, char **envp)
+
+void	free_paths(char **paths)
+{
+	int	i;
+
+	if (!paths)
+		return;
+	i = 0;
+	while (paths[i])
+		free(paths[i++]);
+	free(paths);
+}
+
+char	**split_paths(char **envp)
+{
+	char	**paths;
+	char	*tmp;
+	int	i;
+
+	i = 0;
+	while (ft_strnstr(envp[i], "PATH", 4) == NULL)
+		i++;
+	paths = ft_split(envp[i] + 5, ':');
+	i = 0;
+	while (paths[i])
+	{
+		tmp = paths[i];
+		paths[i] = ft_strjoin(tmp, "/");
+		free(tmp);
+		i++;
+	}
+	return (paths);
+}
+
+char	*find_path(char **paths, char *cmd)
+{
+	int		i;
+	char	*found_path;
+	char	*tmp;
+
+	i = 0;
+	printf("[findpath]\n");
+	while (paths[i])
+	{
+		printf("%s\n", paths[i]);
+		i++;
+	}
+	i = 0;
+	printf("cmd:%s\n", cmd);
+	while (paths[i])
+	{
+		tmp = paths[i];
+		found_path = ft_strjoin(tmp, cmd);
+		printf("%s\n", found_path);
+		if (access(found_path, F_OK) == 0)
+		{
+			printf("foundpath\n");
+			return (found_path);
+		}
+		free(found_path);
+		i++;
+	}
+	printf("\n");
+	return (0);
+}
+
+void	child(char **argv, int *pipe_fd, char **paths)
 {
 	int	infile;
-	char *cmd1[] = {argv[2], NULL};
+	printf("[child]\n");
+	char *cmd1[] = {find_path(paths, argv[2]), NULL};
 
 	close(pipe_fd[0]);
 	infile = open(argv[1], O_RDONLY);
@@ -85,13 +96,14 @@ void	child(char **argv, int *pipe_fd, char **envp)
 	close(infile);
 	dup2(pipe_fd[1], STDOUT_FILENO);
 	close(pipe_fd[1]);
-	execve(cmd1[0], cmd1, envp);
+	execve(cmd1[0], cmd1, NULL);
 }
 
-void	parent(char **argv, int *pipe_fd, char **envp)
+void	parent(char **argv, int *pipe_fd, char **paths)
 {
 	int	outfile;
-	char *cmd2[] = {argv[3], NULL};
+	printf("[parent]\n");
+	char *cmd2[] = {find_path(paths, argv[3]), NULL};
 
 	wait(NULL);
 	close(pipe_fd[1]);
@@ -100,46 +112,25 @@ void	parent(char **argv, int *pipe_fd, char **envp)
 	close(outfile);
 	dup2(pipe_fd[0], STDIN_FILENO);
 	close(pipe_fd[0]);
-	execve(cmd2[0], cmd2, envp);
+	execve(cmd2[0], cmd2, NULL);
 }
-
-char	*find_path(char **envp)
-{
-	int	i;
-	int	j;
-	char	**path;
-
-	i = 0;
-	j = 0;
-	while (ft_strnstr(envp[i], "PATH", 4) == NULL)
-		i++;
-	path = ft_split(envp[i] + 5, ':');
-	printf("%s\n", envp[i]);
-	while (path)
-	{
-		printf("%s\n", path[i]);
-		i++;
-	}
-
-
-	// strnstr to look for "PATH" PATH=/home/roversch/bin:/home/roversch/bin:--etc 
-	// then strdup from path onwards
-	// then ft_split at the : to make chunks, 2d array them?
-	// after the last thing like /bin put the cmd1 like cat. and check path.
-	// make cat into /bin/cat, wc into /usr/bin/wc, etc ft_split and look for / ?
-	return (0);
-}
-
 
 int	main(int argc, char **argv, char **envp)
 {
 	int		pipe_fd[2];
 	pid_t	pid;
-
-	find_path(envp);
-	return (0);
+	char	**paths;
+	int	i;
 	
-	
+	paths = split_paths(envp);
+	i = 0;
+	printf("[baseline]\n");
+	while (paths[i])
+	{
+		printf("%s\n", paths[i]);
+		i++;
+	}
+	printf("\n");
 	if (argc == 5)
 	{	
 		pipe(pipe_fd); //check for succes?
@@ -147,11 +138,12 @@ int	main(int argc, char **argv, char **envp)
 		if (pid == -1)
 			return (printf("error\n"), 1);
 		if (pid == 0)
-			child(argv, pipe_fd, envp);
+			child(argv, pipe_fd, paths);
 		else
-		parent(argv, pipe_fd, envp);
+		parent(argv, pipe_fd, paths);
 	}
+	free_paths(paths);
 	return (0);
 }
 
-// ./pipex infile.txt /bin/cat /usr/bin/wc outfile.txt
+// ./pipex infile.txt cat wc outfile.txt
