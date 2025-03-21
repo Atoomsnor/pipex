@@ -65,7 +65,7 @@ void child1(char **argv, int *pipe_fd, char **paths, char **envp)
 {
 	int		infile;
 	char	*full_path;
-	char	*cmd1[] = {argv[2], NULL};
+	char	**cmd1;
 
 	infile = open(argv[1], O_RDONLY);
 	dup2(infile, STDIN_FILENO);
@@ -74,7 +74,8 @@ void child1(char **argv, int *pipe_fd, char **paths, char **envp)
 	close(pipe_fd[1]);
 	close(pipe_fd[0]);
 
-	full_path = find_path(paths, argv[2]);
+	cmd1 = ft_split(argv[2], ' ');
+	full_path = find_path(paths, cmd1[0]);
 	execve(full_path, cmd1, envp);
 	exit(1);
 }
@@ -83,7 +84,7 @@ void child2(char **argv, int *pipe_fd, char **paths, char **envp)
 {
 	int		outfile;
 	char	*full_path;
-	char	*cmd2[] = {argv[3], NULL};
+	char	**cmd2;
 
 	outfile = open(argv[4], O_WRONLY | O_CREAT | O_TRUNC, 0777);
 	dup2(pipe_fd[0], STDIN_FILENO);
@@ -92,7 +93,8 @@ void child2(char **argv, int *pipe_fd, char **paths, char **envp)
 	close(outfile);
 	close(pipe_fd[1]);
 
-	full_path = find_path(paths, argv[3]);
+	cmd2 = ft_split(argv[3], ' ');
+	full_path = find_path(paths, cmd2[0]);
 	execve(full_path, cmd2, envp);
 	exit(2);
 }
@@ -127,6 +129,11 @@ int main(int argc, char **argv, char **envp)
 	if (argc == 5)
 	{
 		paths = split_paths(envp);
+		if (!paths)
+		{
+			fprintf(stderr, "Failed to split paths\n");
+			return (1);
+		}
 		parent(argv, paths, envp);
 		free_paths(paths);
 	}
