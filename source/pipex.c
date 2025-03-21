@@ -129,11 +129,6 @@ int main(int argc, char **argv, char **envp)
 	if (argc == 5)
 	{
 		paths = split_paths(envp);
-		if (!paths)
-		{
-			fprintf(stderr, "Failed to split paths\n");
-			return (1);
-		}
 		parent(argv, paths, envp);
 		free_paths(paths);
 	}
