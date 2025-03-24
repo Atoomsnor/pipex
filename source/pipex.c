@@ -1,102 +1,81 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   pipex.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: roversch <roversch@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/24 11:38:15 by roversch          #+#    #+#             */
+/*   Updated: 2025/03/24 18:15:37 by roversch         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "pipex.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/types.h>
 #include <sys/wait.h>
+#include <errno.h>
 
-void free_paths(char **paths)
+void	die(const char *msg, int exit_code, int fds[3])
 {
-	int	i;
-
-	if (!paths)
-		return;
-	i = 0;
-	while (paths[i])
-		free(paths[i++]);
-	free(paths);
-}
-
-char **split_paths(char **envp)
-{
-	char	**paths;
-	char	*tmp;
-	int		i;
-
-	i = 0;
-	while (ft_strnstr(envp[i], "PATH", 4) == NULL)
-		i++;
-	paths = ft_split(envp[i] + 5, ':');
-	i = 0;
-	while (paths[i])
+	if (fds)
 	{
-		tmp = paths[i];
-		paths[i] = ft_strjoin(tmp, "/");
-		free(tmp);
-		i++;
+		close(fds[0]);
+		close(fds[1]);
+		close(fds[2]);
 	}
-	return (paths);
+	perror(msg);
+	exit(exit_code);
 }
 
-char *find_path(char **paths, char *cmd)
-{
-	char	*found_path;
-	char	*tmp;
-	int		i;
-
-	i = 0;
-	if (access(cmd, F_OK) == 0)
-		return (cmd);
-	while (paths[i])
-	{
-		tmp = paths[i];
-		found_path = ft_strjoin(tmp, cmd);
-		if (access(found_path, F_OK) == 0)
-			return (found_path);
-		free(found_path);
-		i++;
-	}
-	printf("\n");
-	return (NULL);
-}
-
-void child1(char **argv, int *pipe_fd, char **paths, char **envp)
+void	child1(char **argv, int *pipe_fd, char **paths, char **envp)
 {
 	int		infile;
 	char	*full_path;
 	char	**cmd1;
 
 	infile = open(argv[1], O_RDONLY);
+	if (infile == -1)
+		die("infile Error", 1, (int []){pipe_fd[0], pipe_fd[1], infile});
+	cmd1 = ft_split(argv[2], ' ');
+	if (!cmd1)
+		die("malloc failed", 1, (int []){pipe_fd[0], pipe_fd[1], infile});
+	full_path = find_path(paths, cmd1[0]);
+	if (!full_path)
+		die("no found path", 127, (int []){pipe_fd[0], pipe_fd[1], infile});
 	dup2(infile, STDIN_FILENO);
 	close(infile);
 	dup2(pipe_fd[1], STDOUT_FILENO);
 	close(pipe_fd[1]);
 	close(pipe_fd[0]);
-
-	cmd1 = ft_split(argv[2], ' ');
-	full_path = find_path(paths, cmd1[0]);
 	execve(full_path, cmd1, envp);
-	exit(1);
+	die("execve failed", 126, (int []){pipe_fd[0], pipe_fd[1], infile});
 }
 
-void child2(char **argv, int *pipe_fd, char **paths, char **envp)
+void	child2(char **argv, int *pipe_fd, char **paths, char **envp)
 {
 	int		outfile;
 	char	*full_path;
 	char	**cmd2;
 
-	outfile = open(argv[4], O_WRONLY | O_CREAT | O_TRUNC, 0777);
+	close(pipe_fd[1]);
+	outfile = open(argv[4], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (outfile == -1)
+		die("outfile Error", 1, (int []){pipe_fd[0], pipe_fd[1], outfile});
+	cmd2 = ft_split(argv[3], ' ');
+	if (!cmd2)
+		die("malloc failed", 1, (int []){pipe_fd[0], pipe_fd[1], outfile});
+	full_path = find_path(paths, cmd2[0]);
+	if (!full_path)
+		die("no found path", 127, (int []){pipe_fd[0], pipe_fd[1], outfile});
 	dup2(pipe_fd[0], STDIN_FILENO);
 	close(pipe_fd[0]);
 	dup2(outfile, STDOUT_FILENO);
 	close(outfile);
-	close(pipe_fd[1]);
-
-	cmd2 = ft_split(argv[3], ' ');
-	full_path = find_path(paths, cmd2[0]);
 	execve(full_path, cmd2, envp);
-	exit(2);
+	die("execve failed", 126, (int []){pipe_fd[0], pipe_fd[1], outfile});
 }
 
 void	parent(char **argv, char **paths, char **envp)
@@ -105,30 +84,33 @@ void	parent(char **argv, char **paths, char **envp)
 	pid_t	pid1;
 	pid_t	pid2;
 
-	pipe(pipe_fd);
-
+	if (pipe(pipe_fd) == -1)
+		die("pipe failed", 1, NULL);
 	pid1 = fork();
+	if (pid1 == -1)
+		die("fork failed", 1, NULL);
 	if (pid1 == 0)
 		child1(argv, pipe_fd, paths, envp);
-
 	pid2 = fork();
+	if (pid2 == -1)
+		die("fork failed", 1, NULL);
 	if (pid2 == 0)
 		child2(argv, pipe_fd, paths, envp);
-
 	close(pipe_fd[0]);
 	close(pipe_fd[1]);
-
 	waitpid(pid1, NULL, 0);
 	waitpid(pid2, NULL, 0);
 }
 
-int main(int argc, char **argv, char **envp)
+int	main(int argc, char **argv, char **envp)
 {
 	char	**paths;
 
 	if (argc == 5)
 	{
 		paths = split_paths(envp);
+		if (!paths)
+			die("path not found", 1, NULL);
 		parent(argv, paths, envp);
 		free_paths(paths);
 	}

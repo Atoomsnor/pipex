@@ -1,7 +1,7 @@
 NAME	= pipex
 LIBFT	= libft/libft.a
 SRCDIR	= source
-SRCLIT	= pipex.c
+SRCLIT	= pipex.c pathfinding.c
 SRCS	= $(addprefix $(SRCDIR)/, $(SRCLIT))
 OBJ		= $(SRCS:.c=.o)
 CC		= cc
