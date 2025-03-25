@@ -6,7 +6,7 @@ SRCS	= $(addprefix $(SRCDIR)/, $(SRCLIT))
 OBJ		= $(SRCS:.c=.o)
 CC		= cc
 INCLUDE	= -I ./include -I libft/
-CFLAGS	= -Wall -Wextra -Werror
+CFLAGS	= -Wall -Wextra -Werror -g
 
 all: $(NAME)
 

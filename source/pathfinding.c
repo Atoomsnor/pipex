@@ -6,7 +6,7 @@
 /*   By: roversch <roversch@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/24 11:38:04 by roversch          #+#    #+#             */
-/*   Updated: 2025/03/24 18:15:21 by roversch         ###   ########.fr       */
+/*   Updated: 2025/03/25 15:23:37 by roversch         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,16 +14,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-void	free_paths(char **paths)
+void	free_array(char **array)
 {
 	int	i;
 
-	if (!paths)
+	if (!array)
 		return ;
 	i = 0;
-	while (paths[i])
-		free(paths[i++]);
-	free(paths);
+	while (array[i])
+		free(array[i++]);
+	free(array);
 }
 
 char	**split_paths(char **envp)
@@ -45,7 +45,7 @@ char	**split_paths(char **envp)
 	{
 		tmp = ft_strjoin(paths[i], "/");
 		if (!tmp)
-			return (free_paths(paths), NULL);
+			return (free_array(paths), NULL);
 		free(paths[i]);
 		paths[i] = tmp;
 		i++;
@@ -60,7 +60,7 @@ char	*find_path(char **paths, char *cmd)
 
 	if (!cmd || !paths)
 		return (NULL);
-	if (access(cmd, F_OK) == 0)
+	if (access(cmd, F_OK | X_OK) == 0)
 		return (cmd);
 	i = 0;
 	while (paths[i])
@@ -68,7 +68,7 @@ char	*find_path(char **paths, char *cmd)
 		found_path = ft_strjoin(paths[i], cmd);
 		if (!found_path)
 			return (NULL);
-		if (access(found_path, F_OK) == 0)
+		if (access(found_path, F_OK | X_OK) == 0)
 			return (found_path);
 		free(found_path);
 		i++;
