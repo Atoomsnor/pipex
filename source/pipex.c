@@ -6,7 +6,7 @@
 /*   By: roversch <roversch@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/24 11:38:15 by roversch          #+#    #+#             */
-/*   Updated: 2025/03/25 15:20:04 by roversch         ###   ########.fr       */
+/*   Updated: 2025/03/26 12:18:02 by roversch         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,15 +40,15 @@ void	child1(char **argv, int *pipe_fd, char **paths, char **envp)
 	close(pipe_fd[0]);
 	infile = open(argv[1], O_RDONLY);
 	if (infile == -1)
-		die("infile Error", 1, (int []){pipe_fd[0], pipe_fd[1], infile}, paths);
+		die("infile error", 1, (int []){pipe_fd[0], pipe_fd[1], infile}, paths);
 	cmd1 = ft_split(argv[2], ' ');
 	if (!cmd1)
-		die("malloc failed", 1, (int []){pipe_fd[0], pipe_fd[1], infile}, paths);
+		die("malloc error", 1, (int []){pipe_fd[0], pipe_fd[1], infile}, paths);
 	full_path = find_path(paths, cmd1[0]);
 	if (!full_path)
 	{
 		free_array(cmd1);
-		die("no found path", 127, (int []){pipe_fd[0], pipe_fd[1], infile}, paths);
+		die("path error", 127, (int []){pipe_fd[0], pipe_fd[1], infile}, paths);
 	}
 	dup2(infile, STDIN_FILENO);
 	close(infile);
@@ -57,7 +57,7 @@ void	child1(char **argv, int *pipe_fd, char **paths, char **envp)
 	execve(full_path, cmd1, envp);
 	free(full_path);
 	free_array(cmd1);
-	die("execve failed", 126, (int []){pipe_fd[0], pipe_fd[1], infile}, paths);
+	die("execve error", 126, (int []){pipe_fd[0], pipe_fd[1], infile}, paths);
 }
 
 void	child2(char **argv, int *pipe_fd, char **paths, char **envp)
@@ -69,15 +69,15 @@ void	child2(char **argv, int *pipe_fd, char **paths, char **envp)
 	close(pipe_fd[1]);
 	outfile = open(argv[4], O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (outfile == -1)
-		die("outfile Error", 1, (int []){pipe_fd[0], pipe_fd[1], outfile}, paths);
+		die("outfile err", 1, (int []){pipe_fd[0], pipe_fd[1], outfile}, paths);
 	cmd2 = ft_split(argv[3], ' ');
 	if (!cmd2)
-		die("malloc failed", 1, (int []){pipe_fd[0], pipe_fd[1], outfile}, paths);
+		die("malloc err", 1, (int []){pipe_fd[0], pipe_fd[1], outfile}, paths);
 	full_path = find_path(paths, cmd2[0]);
 	if (!full_path)
 	{
 		free_array(cmd2);
-		die("no found path", 127, (int []){pipe_fd[0], pipe_fd[1], outfile}, paths);
+		die("path err", 127, (int []){pipe_fd[0], pipe_fd[1], outfile}, paths);
 	}
 	dup2(pipe_fd[0], STDIN_FILENO);
 	close(pipe_fd[0]);
@@ -86,7 +86,7 @@ void	child2(char **argv, int *pipe_fd, char **paths, char **envp)
 	execve(full_path, cmd2, envp);
 	free(full_path);
 	free_array(cmd2);
-	die("execve failed", 126, (int []){pipe_fd[0], pipe_fd[1], outfile}, paths);
+	die("execve err", 126, (int []){pipe_fd[0], pipe_fd[1], outfile}, paths);
 }
 
 void	parent(char **argv, char **paths, char **envp)
