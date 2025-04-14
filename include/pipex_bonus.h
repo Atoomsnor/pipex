@@ -1,27 +1,43 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   pipex.h                                            :+:      :+:    :+:   */
+/*   pipex_bonus.h                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: roversch <roversch@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 13:28:58 by roversch          #+#    #+#             */
-/*   Updated: 2025/04/14 19:24:25 by roversch         ###   ########.fr       */
+/*   Updated: 2025/04/14 19:21:40 by roversch         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef PIPEX_H
-# define PIPEX_H
+#ifndef BONUS_H
+# define BONUS_H
 
 # include "../libft/libft.h"
 
+typedef struct s_fd
+{
+	int	in;
+	int	out;
+	int	pipe[2];
+}	t_fd;
+
+typedef struct s_px
+{
+	int		i;
+	int		argc;
+	char	**argv;
+	char	**paths;
+	char	**envp;
+	char	**cmd;
+}	t_px;
+
 /* Error Handling */
-void	die(const char *msg, int exit_code, int fds[3], char **paths);
+void	die(t_px *px, t_fd *fd, const char *msg, int exit_code);
 
 /* Process Management */
-void	parent(char **argv, char **paths, char **envp);
-void	child1(char **argv, int *pipe_fd, char **paths, char **envp);
-void	child2(char **argv, int *pipe_fd, char **paths, char **envp);
+void	parent(t_px *px, t_fd *fd);
+void	child(t_px *px, t_fd *fd);
 
 /* Path Handling */
 char	**split_paths(char **envp);
@@ -29,6 +45,7 @@ char	*find_path(char **paths, char *cmd);
 void	free_array(char **array);
 
 /* Main Function */
+int		build_structs(int argc, char **argv, char **envp);
 int		main(int argc, char **argv, char **envp);
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: roversch <roversch@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/24 11:38:15 by roversch          #+#    #+#             */
-/*   Updated: 2025/03/26 15:31:17 by roversch         ###   ########.fr       */
+/*   Updated: 2025/04/14 15:56:35 by roversch         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,7 +104,10 @@ void	parent(char **argv, char **paths, char **envp)
 		child1(argv, pipe_fd, paths, envp);
 	pid2 = fork();
 	if (pid2 == -1)
+	{
+		waitpid(pid1, NULL, 0);
 		die("fork failed", 1, pipe_fd, paths);
+	}
 	if (pid2 == 0)
 		child2(argv, pipe_fd, paths, envp);
 	close(pipe_fd[0]);
