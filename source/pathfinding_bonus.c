@@ -1,18 +1,33 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   pathfinding.c                                      :+:      :+:    :+:   */
+/*   pathfinding_bonus.c                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: roversch <roversch@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/24 11:38:04 by roversch          #+#    #+#             */
-/*   Updated: 2025/04/15 12:58:08 by roversch         ###   ########.fr       */
+/*   Updated: 2025/04/15 14:13:51 by roversch         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "pipex.h"
+#include "pipex_bonus.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
+
+void	die(t_px *px, t_fd *fd, const char *msg, int exit_code)
+{
+	if (fd)
+	{
+		close(fd->in);
+		close(fd->out);
+		close(fd->pipe[0]);
+		close(fd->pipe[1]);
+	}
+	free_array(px->paths);
+	perror(msg);
+	exit(exit_code);
+}
 
 void	free_array(char **array)
 {

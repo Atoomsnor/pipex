@@ -8,7 +8,7 @@ SRCLIT		= pipex.c pathfinding.c
 SRCS		= $(addprefix $(SRCDIR)/, $(SRCLIT))
 OBJ			= $(SRCS:.c=.o)
 
-SRCLIT_B	= pipex_bonus.c pathfinding.c
+SRCLIT_B	= pipex_bonus.c pathfinding_bonus.c
 SRCS_B		= $(addprefix $(SRCDIR)/, $(SRCLIT_B))
 OBJ_B		= $(SRCS_B:.c=.o)
 

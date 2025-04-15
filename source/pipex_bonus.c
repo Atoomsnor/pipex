@@ -6,7 +6,7 @@
 /*   By: roversch <roversch@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/24 11:38:15 by roversch          #+#    #+#             */
-/*   Updated: 2025/04/14 19:23:54 by roversch         ###   ########.fr       */
+/*   Updated: 2025/04/15 14:14:15 by roversch         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,20 +17,6 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <errno.h>
-
-void	die(t_px *px, t_fd *fd, const char *msg, int exit_code)
-{
-	if (fd)
-	{
-		close(fd->in);
-		close(fd->out);
-		close(fd->pipe[0]);
-		close(fd->pipe[1]);
-	}
-	free_array(px->paths);
-	perror(msg);
-	exit(exit_code);
-}
 
 void	child(t_px *px, t_fd *fd)
 {
@@ -59,6 +45,7 @@ void	parent(t_px *px, t_fd *fd)
 {
 	pid_t	pid;
 
+	px->i = 2;
 	while (px->i < px->argc - 1)
 	{
 		if (pipe(fd->pipe) == -1)
@@ -82,30 +69,59 @@ void	parent(t_px *px, t_fd *fd)
 	}
 }
 
-int	build_structs(int argc, char **argv, char **envp)
+// void	here_doc(t_px *px, t_fd *fd)
+// {
+// 	pid_t	hid;
+// 	char	*line;
+
+// 	px->i = 3;	
+// 	if (pipe(fd->pipe) == -1)
+// 			die(px, fd, "pipe error", 1);
+// 	hid = fork();
+// 	if (hid == -1)
+// 		die(px, fd, "fork error", 1);
+// 	if (hid == 0)
+// 	{
+// 		close(fd->pipe[0]);
+// 		while (get_next_line(&line))
+// 		{
+// 			if (ft_strncmp(line, px->argv[2], ft_strlen(px->argv[2])) == 0)
+// 				exit(EXIT_SUCCESS);
+// 			write(fd->pipe[1], line, ft_strlen(line));
+// 		}
+// 	}
+// 	close(fd->pipe[1]);
+// 	waitpid(hid, NULL, 0);
+// }
+
+void	build_structs(t_px *px, t_fd *fd, int argc, char **argv)
+{
+	px->argc = argc;
+	px->argv = argv;
+	px->paths = split_paths(px->envp);
+	if (!px->paths)
+		die(px, NULL, "path error", 1);
+	fd->in = open(argv[1], O_RDONLY);
+	if (fd->in == -1)
+		die(px, fd, "infile error", 1);
+	fd->out = open(argv[argc - 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (fd->out == -1)
+		die(px, fd, "outfile error", 1);
+}
+int	pipex(int argc, char **argv, char **envp)
 {
 	t_px		px;
 	t_fd		fd;
 
-	if (argc < 5)
-	{
-		perror("input err");
-		return (1);
-	}
-	px.i = 2;
-	px.argc = argc;
-	px.argv = argv;
+	if (argc < 5 || (!ft_strncmp(argv[1], "here_doc", 9) && argc < 6))
+		return (perror("input error"), 1);
 	px.envp = envp;
-	px.paths = split_paths(envp);
-	if (!px.paths)
-		die(&px, NULL, "path error", 1);
-	fd.in = open(argv[1], O_RDONLY);
-	if (fd.in == -1)
-		die(&px, &fd, "infile error", 1);
-	fd.out = open(argv[argc - 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (fd.out == -1)
-		die(&px, &fd, "outfile error", 1);
-	parent(&px, &fd);
+	build_structs(&px, &fd, argc, argv);
+
+	// if (ft_strncmp(argv[1], "here_doc", 9) == 0)
+	// 	here_doc(&px, &fd);
+	// else
+		parent(&px, &fd);
 	//close?
 	free_array(px.paths);
 	return (0);
@@ -113,5 +129,5 @@ int	build_structs(int argc, char **argv, char **envp)
 
 int	main(int argc, char **argv, char **envp)
 {
-	return (build_structs(argc, argv, envp));
+	return (pipex(argc, argv, envp));
 }
